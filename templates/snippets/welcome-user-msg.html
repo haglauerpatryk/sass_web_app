@@ -1,0 +1,7 @@
+<div>
+    {% if user.is_authenticated %}
+        <p>Welcome, {{ user.username }}!</p>
+    {% else %}
+        <p>Welcome, guest!</p>
+    {% endif %}
+</div>
