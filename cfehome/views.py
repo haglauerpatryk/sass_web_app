@@ -13,7 +13,7 @@ def home_view(request, *args, **kwargs):
 def about_view(request, *args, **kwargs):
     qs = PageVisit.objects.all()
     page_qs = PageVisit.objects.filter(path=request.path)
-    try:
+    try: 
         percent = page_qs.count() / qs.count() * 100.0
     except:
         percent = 0
