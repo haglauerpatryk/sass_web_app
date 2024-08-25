@@ -66,7 +66,7 @@ RUN chmod +x paracord_runner.sh
 RUN apt-get remove --purge -y \
     && apt-get autoremove -y \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* 
 
 # Run the Django project via the runtime script
 # when the container starts
