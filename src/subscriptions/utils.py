@@ -20,10 +20,8 @@ from django.db.models import Q
 from customers.models import Customer
 from subscriptions.models import Subscription, UserSubscription, SubscriptionStatus
 
-from toolbox.decorators import light_toolbox
 
 
-@light_toolbox
 def refresh_active_users_subscriptions(
         user_ids=None, 
         active_only=True,
@@ -78,7 +76,6 @@ def refresh_active_users_subscriptions(
     return complete_count == qs_count
 
 
-@light_toolbox
 def clear_dangling_subs() -> None:
     """
     Clears inactive or dangling subscriptions in Stripe.
@@ -104,7 +101,6 @@ def clear_dangling_subs() -> None:
             # print(sub.id, existing_user_subs_qs.exists())
 
 
-@light_toolbox
 def sync_subs_group_permissions() -> None:
     """
     Synchronizes permissions for groups associated with active subscriptions.

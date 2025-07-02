@@ -24,14 +24,12 @@ from django.urls import reverse
 from subscriptions.models import SubscriptionPrice, UserSubscription
 from subscriptions import utils as subs_utils
 
-from toolbox.decorators import light_toolbox
 
 # Set up logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-@light_toolbox
 @login_required
 def user_subscription_view(request: HttpRequest) -> HttpResponse:
     """
@@ -59,7 +57,6 @@ def user_subscription_view(request: HttpRequest) -> HttpResponse:
     return render(request, 'subscriptions/user_detail_view.html', {"subscription": user_sub_obj})
 
 
-@light_toolbox
 @login_required
 def user_subscription_cancel_view(request: HttpRequest) -> HttpResponse:
     """
@@ -93,7 +90,6 @@ def user_subscription_cancel_view(request: HttpRequest) -> HttpResponse:
     return render(request, 'subscriptions/user_cancel_view.html', {"subscription": user_sub_obj})
 
 
-@light_toolbox
 def subscription_price_view(
         request: HttpRequest, 
         interval: Optional[str] = "month") -> HttpResponse:

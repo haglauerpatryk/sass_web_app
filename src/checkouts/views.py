@@ -20,12 +20,10 @@ from django.urls import reverse
 
 import helpers.billing
 from subscriptions.models import SubscriptionPrice, Subscription, UserSubscription
-from toolbox.decorators import light_toolbox
 User = get_user_model()
 BASE_URL = settings.BASE_URL
 
 
-@light_toolbox
 def product_price_redirect_view(
         request: HttpRequest, 
         price_id: Optional[int] = None, 
@@ -47,7 +45,6 @@ def product_price_redirect_view(
     return redirect("stripe-checkout-start")
 
 
-@light_toolbox
 @login_required
 def checkout_redirect_view(request: HttpRequest) -> HttpResponse:
     """
@@ -86,7 +83,6 @@ def checkout_redirect_view(request: HttpRequest) -> HttpResponse:
     return redirect(url)
 
 
-@light_toolbox
 def checkout_finalize_view(request):
     """
     Finalizes the checkout process and updates the user's subscription.

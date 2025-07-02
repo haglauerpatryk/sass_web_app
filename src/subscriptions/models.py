@@ -40,7 +40,6 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
-from toolbox.decorators import light_toolbox
 
 User = settings.AUTH_USER_MODEL # "auth.User"
 
@@ -419,7 +418,6 @@ class UserSubscription(models.Model):
         super().save(*args, **kwargs)
 
 
-@light_toolbox
 def user_sub_post_save(
         sender: models.Model, 
         instance: UserSubscription, 

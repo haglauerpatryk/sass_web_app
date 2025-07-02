@@ -4,16 +4,12 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest, HttpResponse
 
-from toolbox.basic import ToolBox
-from toolbox.decorators import light_toolbox
-
 
 # REDUNDANT CODE
 
 User = get_user_model()
 
 
-@light_toolbox
 def login_view(request: HttpRequest) -> HttpResponse:
     """
     Handle user login by validating credentials and starting a session.
@@ -37,7 +33,6 @@ def login_view(request: HttpRequest) -> HttpResponse:
     return render(request, "authentication/login.html", {})
 
 
-@light_toolbox
 def register_view(request: HttpRequest) -> HttpResponse:
     """
     Handle user registration by creating a new account with the provided data.

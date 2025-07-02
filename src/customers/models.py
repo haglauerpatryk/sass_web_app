@@ -19,7 +19,6 @@ from allauth.account.signals import (
     email_confirmed as allauth_email_confirmed
 )
 import helpers.billing
-from toolbox.decorators import light_toolbox
 
 
 User = settings.AUTH_USER_MODEL # "auth.user"
@@ -68,7 +67,6 @@ class Customer(models.Model):
         # self.save()
 
 
-@light_toolbox
 def allauth_user_signed_up_handler(request: Any, user: Any, *args: Any, **kwargs: Any) -> None:
     """
     Signal handler to create a Customer when a user signs up.
@@ -87,7 +85,6 @@ def allauth_user_signed_up_handler(request: Any, user: Any, *args: Any, **kwargs
 allauth_user_signed_up.connect(allauth_user_signed_up_handler)
 
 
-@light_toolbox
 def allauth_email_confirmed_handler(request: Any, email_address: Any, *args: Any, **kwargs: Any) -> None:
     """
     Signal handler to update the email confirmation status on the Customer model.

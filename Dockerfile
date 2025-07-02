@@ -13,8 +13,8 @@ ENV PATH=/opt/venv/bin:$PATH
 RUN pip install --upgrade pip
 
 # Set Python-related environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Install os dependencies for our mini vm
 RUN apt-get update && apt-get install -y \
@@ -77,4 +77,4 @@ RUN apt-get remove --purge -y \
 
 # Run the Django project via the runtime script
 # when the container starts
-CMD ./paracord_runner.sh
+CMD ["./paracord_runner.sh"]

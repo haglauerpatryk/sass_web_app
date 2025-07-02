@@ -4,12 +4,9 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import get_user_model
 
-from toolbox.decorators import light_toolbox
-
 User = get_user_model()
 
 
-@light_toolbox
 @login_required
 def profile_list_view(request: HttpRequest) -> HttpResponse:
     """
@@ -30,7 +27,6 @@ def profile_list_view(request: HttpRequest) -> HttpResponse:
     return render(request, "profiles/list.html", context)
 
 
-@light_toolbox
 @login_required
 def profile_detail_view(request: HttpRequest, username: Optional[str] = None) -> HttpResponse:
     """
