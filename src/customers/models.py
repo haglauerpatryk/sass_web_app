@@ -52,19 +52,13 @@ class Customer(models.Model):
             *args: Variable length argument list for overriding save behavior.
             **kwargs: Arbitrary keyword arguments for save customization.
         """
-        if not self.stripe_id:
-            if self.init_email_confirmed and self.init_email:
-                email = self.init_email
-                if email != "" or email is not None:
-                    stripe_id = helpers.billing.create_customer(email=email,metadata={
-                        "user_id": self.user.id, 
-                        "username": self.user.username
-                    }, raw=False)
-                    self.stripe_id = stripe_id
+        if not self.stripe_id and self.init_email_confirmed and self.init_email:
+            stripe_id = helpers.billing.create_customer(email=self.init_email, metadata={
+                "user_id": self.user.id, 
+                "username": self.user.username
+            }, raw=False)
+            self.stripe_id = stripe_id
         super().save(*args, **kwargs)
-        # post -save will not update
-        # self.stripe_id = "something else"
-        # self.save()
 
 
 def allauth_user_signed_up_handler(request: Any, user: Any, *args: Any, **kwargs: Any) -> None:
@@ -100,12 +94,8 @@ def allauth_email_confirmed_handler(request: Any, email_address: Any, *args: Any
         init_email=email_address,
         init_email_confirmed=False,
     )
-    # does not send the save method or create the
-    # stripe customer
-    # qs.update(init_email_confirmed=True)
     for obj in qs:
         obj.init_email_confirmed=True
-        # send the signal
         obj.save()
 
 

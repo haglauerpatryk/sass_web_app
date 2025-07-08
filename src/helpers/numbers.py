@@ -1,4 +1,4 @@
-def shorten_number(value):
+def shorten_number(value: int | float | str) -> str:
     """
     Converts large numbers into a shortened format.
     Example: 8200000 -> 8.2M, 1500000000 -> 1.5B, 9000000 -> 9M, 100000000000001 -> 100T
@@ -20,10 +20,8 @@ def shorten_number(value):
         else:
             return str(value)
         
-        # Round the formatted value
         formatted_value = round(formatted_value, 1)
         
-        # Check if the formatted value is a whole number
         if formatted_value.is_integer():
             return '{:.0f}{}'.format(formatted_value, suffix)
         else:

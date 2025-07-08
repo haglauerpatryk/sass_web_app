@@ -13,13 +13,10 @@ def my_decorator(func: Callable) -> Callable:
     """
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        # Pre-function logic (optional)
         print(f"Before calling {func.__name__}")
 
-        # Call the original function
         result = func(*args, **kwargs)
 
-        # Post-function logic (optional)
         print(f"After calling {func.__name__}")
 
         return result

@@ -71,7 +71,7 @@ class Subscription(models.Model):
     name = models.CharField(max_length=120)
     subtitle = models.TextField(blank=True, null=True)
     active = models.BooleanField(default=True)
-    groups = models.ManyToManyField(Group) # one-to-one
+    groups = models.ManyToManyField(Group)
     permissions =  models.ManyToManyField(
         Permission, limit_choices_to={
         "content_type__app_label": "subscriptions", 
@@ -93,7 +93,7 @@ class Subscription(models.Model):
     def __str__(self) -> str:
         return f"{self.name}"
 
-    def get_features_as_list(self) -> List[str]:
+    def get_features_as_list(self) -> List[str] | List[None]:
         """
         Returns the features as a list of strings.
         """
@@ -106,7 +106,7 @@ class Subscription(models.Model):
         Overrides save to create a Stripe product ID if missing.
         """
         if not self.stripe_id:
-            stripe_id: str = helpers.billing.create_product(
+            stripe_id = helpers.billing.create_product(
                     name=self.name, 
                     metadata={
                         "subscription_plan_id": self.id
@@ -160,7 +160,7 @@ class SubscriptionPrice(models.Model):
             )
 
     @property
-    def display_features_list(self) -> List[str]:
+    def display_features_list(self) -> List[str] | List[None]:
         """
         Returns the subscription features as a list of strings.
         """
@@ -201,7 +201,7 @@ class SubscriptionPrice(models.Model):
         return int(self.price * 100)
 
     @property
-    def product_stripe_id(self) -> Optional[str]:
+    def product_stripe_id(self) -> str | None:
         """
         Returns the Stripe product ID associated with the subscription.
         """
@@ -215,7 +215,7 @@ class SubscriptionPrice(models.Model):
         """
         if (not self.stripe_id and 
             self.product_stripe_id is not None):
-            stripe_id: str = helpers.billing.create_price(
+            stripe_id = helpers.billing.create_price(
                 currency=self.stripe_currency,
                 unit_amount=self.stripe_price,
                 interval=self.interval,
@@ -300,7 +300,7 @@ class UserSubscriptionQuerySet(models.QuerySet):
         )
         return self.filter(active_qs_lookup)
     
-    def by_user_ids(self, user_ids: Optional[Union[List[int], int, str]] = None) -> QuerySet:
+    def by_user_ids(self, user_ids: List[int] | int | str | None = None) -> QuerySet:
         """
         Filters subscriptions by a list or single instance of user IDs.
         """
@@ -374,7 +374,7 @@ class UserSubscription(models.Model):
         ]
     
     @property
-    def plan_name(self) -> Optional[str]:
+    def plan_name(self) -> str | None:
         """
         Returns the subscription plan name.
         """
@@ -382,7 +382,7 @@ class UserSubscription(models.Model):
             return None
         return self.subscription.name
 
-    def serialize(self) -> Dict[str, Optional[Union[str, datetime.datetime]]]:
+    def serialize(self) -> Dict[str, str | datetime.datetime | None]:
         """
         Serializes the subscription details to a dictionary.
         """
@@ -394,7 +394,7 @@ class UserSubscription(models.Model):
         }
 
     @property
-    def billing_cycle_anchor(self) -> Optional[int]:
+    def billing_cycle_anchor(self) -> int | None:
         """
         Calculates the billing cycle anchor as a Unix timestamp, used for delayed 
         subscription start in Stripe.
@@ -428,17 +428,17 @@ def user_sub_post_save(
     """
     user_sub_instance = instance
     user = user_sub_instance.user
-    subscription_obj = user_sub_instance.subscription
+    sub_obj = user_sub_instance.subscription
     groups_ids = []
-    if subscription_obj is not None:
-        groups = subscription_obj.groups.all()
+    if sub_obj is not None:
+        groups = sub_obj.groups.all()
         groups_ids = groups.values_list('id', flat=True)
     if not ALLOW_CUSTOM_GROUPS:
         user.groups.set(groups_ids)
     else:
         subs_qs = Subscription.objects.filter(active=True)
-        if subscription_obj is not None:
-            subs_qs = subs_qs.exclude(id=subscription_obj.id)
+        if sub_obj is not None:
+            subs_qs = subs_qs.exclude(id=sub_obj.id)
         subs_groups = subs_qs.values_list("groups__id", flat=True)
         subs_groups_set = set(subs_groups)
         # groups_ids = groups.values_list('id', flat=True) # [1, 2, 3] 

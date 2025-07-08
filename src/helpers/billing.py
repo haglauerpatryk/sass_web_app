@@ -23,7 +23,8 @@ Functions:
     - get_checkout_customer_plan: Retrieves customer plan data from a session ID.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
+import datetime
 import stripe
 from decouple import config
 from . import date_utils
@@ -39,7 +40,9 @@ if "sk_test" in STRIPE_SECRET_KEY and not DJANGO_DEBUG and not STRIPE_TEST_OVERR
 stripe.api_key = STRIPE_SECRET_KEY
 
 
-def serialize_subscription_data(subscription_response: stripe.Subscription) -> Dict[str, Any]:
+def serialize_subscription_data(
+    subscription_response: stripe.Subscription
+    ) -> Dict[str, Union[str, datetime.datetime, bool, None]]:
     """
     Serializes relevant fields from a Stripe subscription object.
 
@@ -65,7 +68,7 @@ def serialize_subscription_data(subscription_response: stripe.Subscription) -> D
 def create_customer(
         name: str = "", 
         email: str = "", 
-        metadata: Dict[str, Any] = {},
+        metadata: Optional[Dict[str, Any]] = {},
         raw: bool = False) -> Any:
     """
     Creates a Stripe customer.
@@ -82,7 +85,7 @@ def create_customer(
     response = stripe.Customer.create(
         name=name,
         email=email,
-        metadata=metadata,
+        metadata=metadata or {},
     )
     if raw:
         return response
@@ -92,7 +95,7 @@ def create_customer(
 
 def create_product(
         name: str = "", 
-        metadata: Dict[str, Any] = {},
+        metadata: Optional[Dict[str, Any]] = {},
         raw: bool = False) -> Any:
     """
     Creates a Stripe product.
@@ -107,7 +110,7 @@ def create_product(
     """
     response = stripe.Product.create(
         name = name,
-        metadata = metadata,
+        metadata = metadata or {},
     )
     if raw:
         return response
@@ -120,7 +123,7 @@ def create_price(
         unit_amount: int = 9999,
         interval: str = "month",
         product: Optional[str] = None,
-        metadata: Dict[str, Any] = {},
+        metadata: Optional[Dict[str, Any]] = {},
         raw: bool = False) -> Optional[Any]:
     """
     Creates a Stripe price for a given product.
@@ -144,7 +147,7 @@ def create_price(
             unit_amount=unit_amount,
             recurring={"interval": interval},
             product=product,
-            metadata=metadata
+            metadata=metadata or {}
         )
     if raw:
         return response
@@ -294,12 +297,14 @@ def get_checkout_customer_plan(session_id: str) -> Dict[str, Any]:
         plan ID, and other subscription details.
     """
     checkout_r = get_checkout_session(session_id, raw=True)
-    customer_id = checkout_r.customer
-    sub_stripe_id = checkout_r.subscription
+    customer_id = getattr(checkout_r, "customer", None)
+    sub_stripe_id = getattr(checkout_r, "subscription", None)
+    if not all([customer_id, sub_stripe_id]):
+        raise ValueError("Invalid checkout session returned from Stripe.")
     sub_r = get_subscription(sub_stripe_id, raw=True)
-    # current_period_start
-    # current_period_end
-    sub_plan = sub_r.plan
+    sub_plan = getattr(sub_r, "plan", None)
+    if not sub_plan:
+        raise ValueError("Invalid subscription returned from Stripe.")
     subscription_data = serialize_subscription_data(sub_r)
     data = {
         "customer_id": customer_id,

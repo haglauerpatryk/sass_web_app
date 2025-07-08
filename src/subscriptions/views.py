@@ -45,9 +45,9 @@ def user_subscription_view(request: HttpRequest) -> HttpResponse:
     Returns:
         HttpResponse: Renders the user's subscription detail template.
     """
-    user_sub_obj, created = UserSubscription.objects.get_or_create(user=request.user)
+    user_sub_obj, _ = UserSubscription.objects.get_or_create(user=request.user)
+
     if request.method == "POST":
-        print("refresh sub")
         finished = subs_utils.refresh_active_users_subscriptions(user_ids=[request.user.id], active_only=False)
         if finished:
             messages.success(request, "Your plan details have been refreshed.")
@@ -73,7 +73,12 @@ def user_subscription_cancel_view(request: HttpRequest) -> HttpResponse:
         HttpResponse: Redirects to the user's subscription details page on success; 
             otherwise, renders the cancel confirmation template.
     """
-    user_sub_obj, created = UserSubscription.objects.get_or_create(user=request.user)
+    try:
+        user_sub_obj = UserSubscription.objects.get(user=request.user)
+    except UserSubscription.DoesNotExist:
+        messages.error(request, "You do not have an active subscription.")
+        return redirect("pricing")
+
     if request.method == "POST":
         if user_sub_obj.stripe_id and user_sub_obj.is_active_status:
             sub_data = helpers.billing.cancel_subscription(
@@ -82,7 +87,10 @@ def user_subscription_cancel_view(request: HttpRequest) -> HttpResponse:
                 feedback="other",
                 cancel_at_period_end=True,
                 raw=False)
-            for k,v in sub_data.items():
+            if not sub_data:
+                messages.error(request, "Failed to cancel your subscription. Please contact support.")
+                return redirect(user_sub_obj.get_absolute_url())
+            for k, v in sub_data.items():
                 setattr(user_sub_obj, k, v)
             user_sub_obj.save()
             messages.success(request, "Your plan has been cancelled.")
@@ -110,17 +118,14 @@ def subscription_price_view(
     qs = SubscriptionPrice.objects.filter(featured=True)
     inv_mo = SubscriptionPrice.IntervalChoices.MONTHLY
     inv_yr = SubscriptionPrice.IntervalChoices.YEARLY
-    object_list = qs.filter(interval=inv_mo)
-    url_path_name = "pricing_interval"
-    mo_url = reverse(url_path_name, kwargs={"interval": inv_mo})
-    yr_url = reverse(url_path_name, kwargs={"interval": inv_yr})
-    active = inv_mo
-    if interval == inv_yr:
-        active = inv_yr
-        object_list = qs.filter(interval=inv_yr)
+
+    path = "pricing_interval"
+    active = inv_mo if interval != inv_yr else inv_yr
+    object_list = qs.filter(interval=active)
+
     return render(request, "subscriptions/pricing.html", {
         "object_list": object_list,
-        "mo_url": mo_url,
-        "yr_url": yr_url,
+        "mo_url": reverse(path, kwargs={"interval": inv_mo}),
+        "yr_url": reverse(path, kwargs={"interval": inv_yr}),
         "active": active,
     })
