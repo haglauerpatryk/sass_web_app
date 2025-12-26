@@ -1,0 +1,47 @@
+================================================================================
+[INFO ] @ 2025-07-08 05:21:13,298
+  – FUNC:    home_view
+  – PATH:    cfehome\views.py
+  – DETAILS:
+================================================================================
+################################################################################
+[ERROR] @ 2025-07-08 05:21:13,300
+  – FUNC:    home_view
+  – PATH:    cfehome\views.py
+  – DETAILS:
+       TRIGGER: ValueError: Oops
+################################################################################
+Traceback (most recent call last):
+  File "C:\Users\paha3\Desktop\MyWork\Study\django_sass\sass_web_app\src\toolbox\basic.py", line 27, in wrapper
+    return wrapped_with_pings(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\paha3\Desktop\MyWork\Study\django_sass\sass_web_app\src\toolbox\ping_manager.py", line 46, in wrapped
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\paha3\Desktop\MyWork\Study\django_sass\sass_web_app\src\cfehome\views.py", line 26, in home_view
+    raise ValueError("Oops")
+ValueError: Oops
+################################################################################
+[ERROR] @ 2025-07-08 05:21:13,303
+  – FUNC:    home_2view
+  – PATH:    cfehome\views.py
+  – DETAILS:
+       RETRY 1: home_2view
+       TRIGGER: ValueError: Oops!
+################################################################################
+Traceback (most recent call last):
+  File "C:\Users\paha3\Desktop\MyWork\Study\django_sass\sass_web_app\src\toolbox\basic.py", line 27, in wrapper
+    return wrapped_with_pings(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\paha3\Desktop\MyWork\Study\django_sass\sass_web_app\src\toolbox\ping_manager.py", line 46, in wrapped
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\paha3\Desktop\MyWork\Study\django_sass\sass_web_app\src\cfehome\views.py", line 26, in home_view
+    raise ValueError("Oops")
+ValueError: Oops
+================================================================================
+[INFO ] @ 2025-07-08 05:21:13,405
+  – FUNC:    about_view
+  – PATH:    cfehome\views.py
+  – DETAILS:
+================================================================================
