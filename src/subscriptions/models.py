@@ -1,82 +1,35 @@
-"""
-Models and utilities for subscription management, integrating with Stripe 
-and Django's permissions framework.
-
-Models:
-    Subscription: Represents a subscription plan linked to a Stripe product, 
-        associating user groups and permissions with each plan.
-        
-    SubscriptionPrice: Defines pricing details for a subscription plan, 
-        linked to Stripe prices and supporting multiple intervals.
-        
-    UserSubscription: Tracks individual users' subscription details, 
-        including billing periods and status, with Stripe integration.
-
-Enums:
-    SubscriptionStatus: Enum representing possible states of a user subscription, 
-        such as 'active', 'trialing', 'canceled', and more.
-
-Custom QuerySets:
-    UserSubscriptionQuerySet: Provides custom filters for UserSubscription,
-        including date-based filtering, active status checks, and user ID filtering.
-
-Managers:
-    UserSubscriptionManager: Custom manager using UserSubscriptionQuerySet 
-        to enable specialized queries on UserSubscription instances.
-
-Signal Functions:
-    user_sub_post_save: Signal handler to update user group memberships 
-        based on subscription changes, triggered when UserSubscription instances are saved.
-"""
-
 import datetime
-from typing import Optional, List, Dict, Union, Any
 import helpers.billing
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.contrib.auth.models import Group, Permission
 from django.db.models.signals import post_save
 from django.conf import settings 
 from django.urls import reverse
 from django.utils import timezone
 
-from toolbox.decorators import light_toolbox
-
 User = settings.AUTH_USER_MODEL # "auth.User"
 
-ALLOW_CUSTOM_GROUPS: bool = True
-SUBSCRIPTION_PERMISSIONS: List[tuple] = [
-    ("advanced", "Advanced Perm"),
-    ("pro", "Pro Perm"),
-    ("basic", "Basic Perm"),
+ALLOW_CUSTOM_GROUPS = True
+SUBSCRIPTION_PERMISSIONS = [
+    ("advanced", "Advanced Perm"), # subscriptions.advanced
+    ("pro", "Pro Perm"),  # subscriptions.pro
+    ("basic", "Basic Perm"),  # subscriptions.basic,
     ("basic_ai", "Basic AI Perm")
 ]
 
+
+# Create your models here.
 class Subscription(models.Model):
     """
-    Represents a subscription plan associated with a Stripe product.
-
-    Attributes:
-        name (str): Name of the subscription plan.
-        subtitle (str, optional): Additional description of the plan.
-        active (bool): Indicates if the subscription plan is active.
-        groups (ManyToMany[Group]): User groups associated with this subscription.
-        permissions (ManyToMany[Permission]): Permissions associated with this subscription.
-        stripe_id (str): Stripe product ID.
-        order (int): Ordering for display on the pricing page.
-        featured (bool): Whether the plan is featured on the pricing page.
-        updated (datetime): Timestamp for last update.
-        timestamp (datetime): Timestamp for when the subscription was created.
-        features (str, optional): List of features for display, separated by newline characters.
+    Subscription Plan = Stripe Product
     """
     name = models.CharField(max_length=120)
     subtitle = models.TextField(blank=True, null=True)
     active = models.BooleanField(default=True)
     groups = models.ManyToManyField(Group) # one-to-one
-    permissions =  models.ManyToManyField(
-        Permission, limit_choices_to={
-        "content_type__app_label": "subscriptions", 
-        "codename__in": [x[0]for x in SUBSCRIPTION_PERMISSIONS]
+    permissions =  models.ManyToManyField(Permission, limit_choices_to={
+        "content_type__app_label": "subscriptions", "codename__in": [x[0]for x in SUBSCRIPTION_PERMISSIONS]
         }
     )
     stripe_id = models.CharField(max_length=120, null=True, blank=True)
@@ -87,27 +40,21 @@ class Subscription(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     features = models.TextField(help_text="Features for pricing, seperated by new line", blank=True, null=True)
 
+    def __str__(self):
+        return f"{self.name}"
+
     class Meta:
         ordering = ['order', 'featured', '-updated']
         permissions = SUBSCRIPTION_PERMISSIONS
 
-    def __str__(self) -> str:
-        return f"{self.name}"
-
-    def get_features_as_list(self) -> List[str]:
-        """
-        Returns the features as a list of strings.
-        """
+    def get_features_as_list(self):
         if not self.features:
             return []
         return [x.strip() for x in self.features.split("\n")]
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        """
-        Overrides save to create a Stripe product ID if missing.
-        """
+    def save(self, *args, **kwargs):
         if not self.stripe_id:
-            stripe_id: str = helpers.billing.create_product(
+            stripe_id = helpers.billing.create_product(
                     name=self.name, 
                     metadata={
                         "subscription_plan_id": self.id
@@ -118,21 +65,11 @@ class Subscription(models.Model):
         super().save(*args, **kwargs)
 
 
+# Create your models here.
 class SubscriptionPrice(models.Model):
     """
-    Stores the pricing details for a subscription, linked to a Stripe price.
-
-    Attributes:
-        subscription (ForeignKey): Related Subscription plan.
-        stripe_id (str): Stripe price ID.
-        interval (str): Billing interval, e.g., 'month' or 'year'.
-        price (Decimal): Price amount for the subscription.
-        order (int): Ordering for display on the pricing page.
-        featured (bool): If this price option is featured.
-        updated (datetime): Timestamp for last update.
-        timestamp (datetime): Timestamp for when the price was created.
+    Subscription Price = Stripe Price
     """
-
     class IntervalChoices(models.TextChoices):
         MONTHLY = "month", "Monthly"
         YEARLY = "year", "Yearly"
@@ -152,71 +89,50 @@ class SubscriptionPrice(models.Model):
     class Meta:
         ordering = ['subscription__order', 'order', 'featured', '-updated']
 
-    def get_checkout_url(self) -> str:
-        """
-        Generates the URL for the checkout page for this price.
-        """
+    def get_checkout_url(self):
         return reverse("sub-price-checkout", 
             kwargs = {"price_id": self.id}  
             )
 
     @property
-    def display_features_list(self) -> List[str]:
-        """
-        Returns the subscription features as a list of strings.
-        """
+    def display_features_list(self):
         if not self.subscription:
             return []
         return self.subscription.get_features_as_list()
     
     @property
-    def display_sub_name(self) -> str:
-        """
-        Returns the subscription plan name.
-        """
+    def display_sub_name(self):
         if not self.subscription:
             return "Plan"
         return self.subscription.name
 
     @property
-    def display_sub_subtitle(self) -> Optional[str]:
-        """
-        Returns the subscription plan subtitle.
-        """
+    def display_sub_subtitle(self):
         if not self.subscription:
             return "Plan"
         return self.subscription.subtitle
     
     @property
-    def stripe_currency(self) -> str:
-        """
-        Returns the currency for the price (default: 'usd').
-        """
+    def stripe_currency(self):
         return "usd"
     
     @property
-    def stripe_price(self) -> int:
+    def stripe_price(self):
         """
-        Converts the price to cents for Stripe compatibility.
+        remove decimal places
         """
         return int(self.price * 100)
 
     @property
-    def product_stripe_id(self) -> Optional[str]:
-        """
-        Returns the Stripe product ID associated with the subscription.
-        """
+    def product_stripe_id(self):
         if not self.subscription:
             return None
         return self.subscription.stripe_id
     
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        """
-        Overrides save to create a Stripe price ID if missing.
-        """
+    def save(self, *args, **kwargs):
         if (not self.stripe_id and 
             self.product_stripe_id is not None):
-            stripe_id: str = helpers.billing.create_price(
+            stripe_id = helpers.billing.create_price(
                 currency=self.stripe_currency,
                 unit_amount=self.stripe_price,
                 interval=self.interval,
@@ -246,13 +162,7 @@ class SubscriptionStatus(models.TextChoices):
     PAUSED = 'paused', 'Paused'
 
 class UserSubscriptionQuerySet(models.QuerySet):
-    def by_range(self, 
-                 days_start: int = 7, 
-                 days_end: int = 120, 
-                 verbose: bool = True) -> QuerySet:
-        """
-        Filters subscriptions by a range of days remaining until expiration.
-        """
+    def by_range(self, days_start=7, days_end=120, verbose=True):
         now = timezone.now()
         days_start_from_now = now + datetime.timedelta(days=days_start)
         days_end_from_now = now + datetime.timedelta(days=days_end)
@@ -265,10 +175,7 @@ class UserSubscriptionQuerySet(models.QuerySet):
             current_period_end__lte=range_end
         )
     
-    def by_days_left(self, days_left: int = 7) -> QuerySet:
-        """
-        Filters subscriptions that expire in a specific number of days.
-        """
+    def by_days_left(self, days_left=7):
         now = timezone.now()
         in_n_days = now + datetime.timedelta(days=days_left)
         day_start = in_n_days.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -278,10 +185,7 @@ class UserSubscriptionQuerySet(models.QuerySet):
             current_period_end__lte=day_end
         )
     
-    def by_days_ago(self, days_ago: int = 3) -> QuerySet:
-        """
-        Filters subscriptions that expired a specific number of days ago.
-        """
+    def by_days_ago(self, days_ago=3):
         now = timezone.now()
         in_n_days = now - datetime.timedelta(days=days_ago)
         day_start = in_n_days.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -291,20 +195,14 @@ class UserSubscriptionQuerySet(models.QuerySet):
             current_period_end__lte=day_end
         )
 
-    def by_active_trialing(self) -> QuerySet:
-        """
-        Filters subscriptions that are either active or in a trialing state.
-        """
+    def by_active_trialing(self):
         active_qs_lookup = (
             Q(status = SubscriptionStatus.ACTIVE) |
             Q(status = SubscriptionStatus.TRIALING)
         )
         return self.filter(active_qs_lookup)
     
-    def by_user_ids(self, user_ids: Optional[Union[List[int], int, str]] = None) -> QuerySet:
-        """
-        Filters subscriptions by a list or single instance of user IDs.
-        """
+    def by_user_ids(self, user_ids=None):
         qs = self
         if isinstance(user_ids, list):
             qs = self.filter(user_id__in=user_ids)
@@ -316,7 +214,7 @@ class UserSubscriptionQuerySet(models.QuerySet):
 
 
 class UserSubscriptionManager(models.Manager):
-    def get_queryset(self) -> UserSubscriptionQuerySet:
+    def get_queryset(self):
         return UserSubscriptionQuerySet(self.model, using=self._db)
 
     # def by_user_ids(self, user_ids=None):
@@ -324,21 +222,6 @@ class UserSubscriptionManager(models.Manager):
         
 
 class UserSubscription(models.Model):
-    """
-    Represents a subscription associated with a user, including current status 
-    and Stripe integration details.
-
-    Attributes:
-        user (User): The user holding the subscription.
-        subscription (Subscription): The associated subscription plan.
-        stripe_id (str): Stripe subscription ID.
-        active (bool): Indicates if the subscription is active.
-        user_cancelled (bool): Indicates if the user has canceled the subscription.
-        current_period_start (datetime): Start date of the current billing period.
-        current_period_end (datetime): End date of the current billing period.
-        cancel_at_period_end (bool): Indicates if the subscription will end at the period's end.
-        status (str): Status of the subscription.
-    """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     subscription = models.ForeignKey(Subscription, on_delete=models.SET_NULL, null=True, blank=True)
     stripe_id = models.CharField(max_length=120, null=True, blank=True)
@@ -352,41 +235,26 @@ class UserSubscription(models.Model):
 
     objects = UserSubscriptionManager()
 
-    def get_absolute_url(self) -> str:
-        """
-        Returns the URL for the user's subscription details.
-        """
+    def get_absolute_url(self):
         return reverse("user_subscription")
     
-    def get_cancel_url(self) -> str:
-        """
-        Returns the URL for canceling the subscription.
-        """
+    def get_cancel_url(self):
         return reverse("user_subscription_cancel")
     
     @property
-    def is_active_status(self) -> bool:
-        """
-        Returns True if the subscription is active or trialing.
-        """
+    def is_active_status(self):
         return self.status in [
             SubscriptionStatus.ACTIVE, 
             SubscriptionStatus.TRIALING
         ]
     
     @property
-    def plan_name(self) -> Optional[str]:
-        """
-        Returns the subscription plan name.
-        """
+    def plan_name(self):
         if not self.subscription:
             return None
         return self.subscription.name
 
-    def serialize(self) -> Dict[str, Optional[Union[str, datetime.datetime]]]:
-        """
-        Serializes the subscription details to a dictionary.
-        """
+    def serialize(self):
         return {
             "plan_name": self.plan_name,
             "status": self.status,
@@ -395,11 +263,8 @@ class UserSubscription(models.Model):
         }
 
     @property
-    def billing_cycle_anchor(self) -> Optional[int]:
+    def billing_cycle_anchor(self):
         """
-        Calculates the billing cycle anchor as a Unix timestamp, used for delayed 
-        subscription start in Stripe.
-
         https://docs.stripe.com/payments/checkout/billing-cycle
         Optional delay to start new subscription in
         Stripe checkout
@@ -408,10 +273,7 @@ class UserSubscription(models.Model):
             return None
         return int(self.current_period_end.timestamp())
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        """
-        Overrides save to set original period start if not set.
-        """
+    def save(self, *args, **kwargs):
         if (self.original_period_start is None and
             self.current_period_start is not None
             ):
@@ -419,15 +281,8 @@ class UserSubscription(models.Model):
         super().save(*args, **kwargs)
 
 
-@light_toolbox
-def user_sub_post_save(
-        sender: models.Model, 
-        instance: UserSubscription, 
-        *args: Any, 
-        **kwargs: Any) -> None:
-    """
-    Signal handler to update user's group memberships based on their subscription plan.
-    """
+
+def user_sub_post_save(sender, instance, *args, **kwargs):
     user_sub_instance = instance
     user = user_sub_instance.user
     subscription_obj = user_sub_instance.subscription
