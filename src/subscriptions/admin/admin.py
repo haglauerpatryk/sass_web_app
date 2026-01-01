@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Subscription, SubscriptionPrice, UserSubscription
+from subscriptions.models import Subscription, SubscriptionPrice, UserSubscription
 
 class SubscriptionPrice(admin.StackedInline):
     model = SubscriptionPrice

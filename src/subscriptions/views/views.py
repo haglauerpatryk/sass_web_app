@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from subscriptions.models import SubscriptionPrice, UserSubscription
-from subscriptions import utils as subs_utils
+from subscriptions.utils import utils as subs_utils
 
 @login_required
 def user_subscription_view(request,):

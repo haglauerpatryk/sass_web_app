@@ -60,7 +60,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # my-apps
-    "commando",
+    "tooling",
     "customers",
     "profiles",
     "subscriptions",

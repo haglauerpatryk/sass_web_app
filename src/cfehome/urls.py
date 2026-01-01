@@ -18,12 +18,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from checkouts import views as checkout_views
-from subscriptions import views as subscriptions_views
 from .views import (
     home_view, 
 )
 urlpatterns = [
-    path("", home_view, name='home'), #index page -> root page
+    path("", home_view, name='home'), 
     path("checkout/sub-price/<int:price_id>/", 
             checkout_views.product_price_redirect_view,
             name='sub-price-checkout'
@@ -36,10 +35,7 @@ urlpatterns = [
             checkout_views.checkout_finalize_view,
             name='stripe-checkout-end'
             ),
-    path("pricing/", subscriptions_views.subscription_price_view, name='pricing'),
-    path("pricing/<str:interval>/", subscriptions_views.subscription_price_view, name='pricing_interval'),
-    path('accounts/billing/', subscriptions_views.user_subscription_view, name='user_subscription'),
-    path('accounts/billing/cancel', subscriptions_views.user_subscription_cancel_view, name='user_subscription_cancel'),
+    path("subscriptions/", include('subscriptions.urls')),
     path('accounts/', include('allauth.urls')),
     path('profiles/', include('profiles.urls')),
     path("admin/", admin.site.urls),
