@@ -17,24 +17,11 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from checkouts import views as checkout_views
 from .views import (
     home_view, 
 )
 urlpatterns = [
     path("", home_view, name='home'), 
-    path("checkout/sub-price/<int:price_id>/", 
-            checkout_views.product_price_redirect_view,
-            name='sub-price-checkout'
-            ),
-    path("checkout/start/", 
-            checkout_views.checkout_redirect_view,
-            name='stripe-checkout-start'
-            ),
-    path("checkout/success/", 
-            checkout_views.checkout_finalize_view,
-            name='stripe-checkout-end'
-            ),
     path("subscriptions/", include('subscriptions.urls')),
     path('accounts/', include('allauth.urls')),
     path('profiles/', include('profiles.urls')),
